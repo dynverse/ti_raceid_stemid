@@ -1,5 +1,6 @@
 id: raceid_stemid
 docker_repository: dynverse/ti_raceid_stemid
+singularity_collection: 1571
 container_url: https://github.com/dynverse/ti_raceid_stemid
 name: RaceID / StemID
 type: algorithm
