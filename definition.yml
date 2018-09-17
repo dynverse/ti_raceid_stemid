@@ -3,7 +3,7 @@ docker_repository: dynverse/ti_raceid_stemid
 singularity_collection: 1571
 container_url: https://github.com/dynverse/ti_raceid_stemid
 name: RaceID / StemID
-type: algorithm
+source: tool
 platform: R
 doi: 10.1016/j.stem.2016.05.010
 google_scholar_cluster_id: '169140648120472800360'
