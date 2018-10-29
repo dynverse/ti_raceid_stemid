@@ -8,7 +8,7 @@ RUN R -e 'devtools::install_cran("FateID")'
 
 RUN R -e 'devtools::install_cran("RaceID")'
 
-LABEL version 0.1.3
+LABEL version 0.1.5
 
 ADD . /code
 
