@@ -1,4 +1,6 @@
-FROM dynverse/dynwrap:bioc
+FROM dynverse/dynwrapr:v0.1.0
+
+ARG GITHUB_PAT
 
 RUN R -e 'devtools::install_cran("destiny")'
 
@@ -8,8 +10,6 @@ RUN R -e 'devtools::install_cran("FateID")'
 
 RUN R -e 'devtools::install_cran("RaceID")'
 
-LABEL version 0.1.5.1
+COPY definition.yml run.R example.h5 /code/
 
-ADD . /code
-
-ENTRYPOINT Rscript /code/run.R
+ENTRYPOINT ["/code/run.R"]

@@ -1,3 +1,11 @@
+#!/usr/local/bin/Rscript
+
+task <- dyncli::main()
+# task = dyncli::main(
+#   c("--dataset", "/code/example.h5", "--output", "/mnt/output"),
+#   "/code/definition.yml"
+# )
+
 library(jsonlite)
 library(readr)
 library(dplyr)
@@ -8,16 +16,8 @@ library(RaceID)
 #   ____________________________________________________________________________
 #   Load data                                                               ####
 
-data <- read_rds("/ti/input/data.rds")
-params <- jsonlite::read_json("/ti/input/params.json")
-
-#' @examples
-#' data <- dyntoy::generate_dataset(id = "test", num_cells = 300, num_features = 300, model = "linear") %>% c(., .$prior_information)
-#' params <- yaml::read_yaml("containers/raceid_stemid/definition.yml")$parameters %>%
-#'   {.[names(.) != "forbidden"]} %>%
-#'   map(~ .$default)
-
-counts <- data$counts
+params <- task$params
+counts <- as.matrix(task$counts)
 
 #   ____________________________________________________________________________
 #   Infer trajectory                                                        ####
@@ -107,9 +107,8 @@ checkpoints$method_aftermethod <- as.numeric(Sys.time())
 dimred_milestones <- ltr@ldata$cnl %>% as.matrix
 rownames(dimred_milestones) <- paste0("M", ltr@ldata$m)
 dimred <- ltr@ltcoord %>% na.omit
-cell_ids <- rownames(dimred)
 milestone_ids <- rownames(dimred_milestones)
-grouping <- paste0("M", ltr@ldata$lp[cell_ids])
+grouping <- paste0("M", ltr@ldata$lp[rownames(dimred)])
 
 # calculate distance between milestones
 dist_milestones <- as.matrix(dist(dimred_milestones))
@@ -119,26 +118,24 @@ milestone_network <- ltr@cdata$linkscore %>%
   as.matrix() %>%
   reshape2::melt(varnames = c("from", "to"), value.name = "linkscore") %>%
   na.omit() %>%
-  filter(linkscore >= params$scthr) %>%
   mutate_at(c("from", "to"), ~gsub("cl.", "M", ., fixed = TRUE)) %>%
+  filter(linkscore >= params$scthr) %>%
   mutate(
     length =  dist_milestones[cbind(from, to)],
     directed = FALSE
   ) %>%
   dplyr::select(from, to, length, directed)
 
-
-output <- lst(
-  cell_ids,
-  milestone_ids,
-  milestone_network,
-  dimred_milestones,
-  dimred,
-  grouping,
-  timings = checkpoints
-)
-
 #   ____________________________________________________________________________
 #   Save output                                                             ####
 
-write_rds(output, "/ti/output/output.rds")
+output <- dynwrap::wrap_data(cell_ids = rownames(dimred)) %>%
+  dynwrap::add_dimred_projection(
+    milestone_ids = milestone_ids,
+    milestone_network = milestone_network,
+    dimred = dimred,
+    dimred_milestones = dimred_milestones
+  ) %>%
+  dynwrap::add_timings(checkpoints)
+
+dyncli::write_output(output, task$output)
