@@ -21,11 +21,9 @@ manuscript:
   google_scholar_cluster_id: '169140648120472800360'
   publication_date: '2016-06-21'
 
-
 container:
   url: https://github.com/dynverse/ti_raceid_stemid
   docker: dynverse/ti_raceid_stemid
-
 
 wrapper:
   type: dimred_projection
@@ -41,10 +39,7 @@ wrapper:
   - acyclic_graph
   - graph
   - disconnected_graph
-  example: /code/example.R
-  input_required:
-  - counts
-
+  input_required: counts
 
 parameters:
   - id: knn
