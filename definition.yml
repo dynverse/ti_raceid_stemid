@@ -71,7 +71,7 @@ parameters:
   - id: sat
     type: logical
     default: TRUE
-    description: If \code{TRUE}, then the number of clusters is determined based on finding the saturation point of the mean within-cluster dispersion as a function of the cluster number. If \code{FALSE}, then cluster number needs to be given as \code{cln}.
+    description: If `TRUE`, then the number of clusters is determined based on finding the saturation point of the mean within-cluster dispersion as a function of the cluster number. If `FALSE`, then cluster number needs to be given as `cln`.
   - id: samp
     type: integer
     default: 1000
@@ -87,7 +87,7 @@ parameters:
       type: uniform
       upper: 100
       lower: 10
-    description: Number of clusters to be used. If \code{sat} is \code{TRUE}, this number is inferred by the saturation criterion.
+    description: Number of clusters to be used. If `sat` is `TRUE`, this number is inferred by the saturation criterion.
   - id: clustnr
     type: integer
     default: 30
@@ -168,7 +168,7 @@ parameters:
   - id: nmode
     type: logical
     default: TRUE
-    description: If \code{TRUE}, then a cell of given cluster is assigned to the link to the cluster with the smallest average distance of the knn nearest neighbours within this cluster.
+    description: If `TRUE`, then a cell of given cluster is assigned to the link to the cluster with the smallest average distance of the knn nearest neighbours within this cluster.
   - id: projcells_knn
     type: integer
     default: 3
@@ -176,7 +176,7 @@ parameters:
       type: uniform
       upper: 20
       lower: 3
-    description: See \code{nmode}.
+    description: See `nmode`.
   - id: fr
     type: logical
     default: FALSE
@@ -192,7 +192,7 @@ parameters:
   - id: fast
     type: logical
     default: FALSE
-    description: If \code{TRUE} and \code{nmode} is \code{FALSE} cells will still be assigned to links based on maximum projections but a fast approximate background model will be used to infer significance. The function will do nothing in this case.
+    description: If `TRUE` and `nmode` is `FALSE` cells will still be assigned to links based on maximum projections but a fast approximate background model will be used to infer significance. The function will do nothing in this case.
   - id: pthr
     type: numeric
     default: 0.01
