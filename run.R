@@ -16,7 +16,7 @@ library(RaceID)
 #   ____________________________________________________________________________
 #   Load data                                                               ####
 
-params <- task$params
+parameters <- task$parameters
 counts <- as.matrix(task$counts)
 
 #   ____________________________________________________________________________
@@ -33,39 +33,39 @@ sc <- sc %>% filterdata(
   mintotal = 1,
   minexpr = 0,
   minnumber = 0,
-  knn = params$knn,
-  ccor = params$ccor
+  knn = parameters$knn,
+  ccor = parameters$ccor
 )
 
 # compute pairwise distances
 sc <- sc %>% compdist(
-  metric = params$metric,
+  metric = parameters$metric,
   FSelect = FALSE
 )
 
 # perform clustering
-params$clustnr <- min(params$clustnr, ceiling(ncol(sc@expdata)/5))
+parameters$clustnr <- min(parameters$clustnr, ceiling(ncol(sc@expdata)/5))
 sc <- sc %>% clustexp(
-  sat = params$sat,
-  samp = params$samp,
-  cln = params$cln,
-  clustnr = params$clustnr,
-  bootnr = params$bootnr,
-  FUNcluster = params$FUNcluster
+  sat = parameters$sat,
+  samp = parameters$samp,
+  cln = parameters$cln,
+  clustnr = parameters$clustnr,
+  bootnr = parameters$bootnr,
+  FUNcluster = parameters$FUNcluster
 )
 
 # detect outliers and redefine clusters
 sc <- sc %>% findoutliers(
-  probthr = params$probthr,
-  outminc = params$outminc,
-  outlg = params$outlg,
-  outdistquant = params$outdistquant
+  probthr = parameters$probthr,
+  outminc = parameters$outminc,
+  outlg = parameters$outlg,
+  outdistquant = parameters$outdistquant
 )
 
 # compute t-SNE map
 sc <- sc %>% comptsne(
-  initial_cmd = params$initial_cmd,
-  perplexity = params$perplexity
+  initial_cmd = parameters$initial_cmd,
+  perplexity = parameters$perplexity
 )
 
 # initialization
@@ -76,16 +76,16 @@ ltr <- ltr %>% compentropy()
 
 # computation of the projections for all cells
 ltr <- ltr %>% projcells(
-  cthr = params$cthr,
-  nmode = params$nmode,
-  knn = params$projcells_knn,
-  fr = params$fr
+  cthr = parameters$cthr,
+  nmode = parameters$nmode,
+  knn = parameters$projcells_knn,
+  fr = parameters$fr
 )
 
 # computation of the projections for all cells after randomization
 ltr <- ltr %>% projback(
-  pdishuf = params$pdishuf,
-  fast = params$fast
+  pdishuf = parameters$pdishuf,
+  fast = parameters$fast
 )
 
 # assembly of the lineage tree
@@ -93,7 +93,7 @@ ltr <- ltr %>% lineagegraph()
 
 # compute p-values for link significance
 ltr <- ltr %>% comppvalue(
-  pthr = params$pthr
+  pthr = parameters$pthr
 )
 
 
@@ -119,7 +119,7 @@ milestone_network <- ltr@cdata$linkscore %>%
   reshape2::melt(varnames = c("from", "to"), value.name = "linkscore") %>%
   na.omit() %>%
   mutate_at(c("from", "to"), ~gsub("cl.", "M", ., fixed = TRUE)) %>%
-  filter(linkscore >= params$scthr) %>%
+  filter(linkscore >= parameters$scthr) %>%
   mutate(
     length =  dist_milestones[cbind(from, to)],
     directed = FALSE
