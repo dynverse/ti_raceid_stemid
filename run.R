@@ -1,23 +1,21 @@
-library(jsonlite)
-library(readr)
-library(dplyr)
-library(purrr)
+#!/usr/local/bin/Rscript
 
-library(RaceID)
+task <- dyncli::main()
+# task = dyncli::main(
+#   c("--dataset", "/code/example.h5", "--output", "/mnt/output"),
+#   "/code/definition.yml"
+# )
+
+library(dplyr, warn.conflicts = FALSE)
+library(purrr, warn.conflicts = FALSE)
+
+library(RaceID, warn.conflicts = FALSE)
 
 #   ____________________________________________________________________________
 #   Load data                                                               ####
 
-data <- read_rds("/ti/input/data.rds")
-params <- jsonlite::read_json("/ti/input/params.json")
-
-#' @examples
-#' data <- dyntoy::generate_dataset(id = "test", num_cells = 300, num_features = 300, model = "linear") %>% c(., .$prior_information)
-#' params <- yaml::read_yaml("containers/raceid_stemid/definition.yml")$parameters %>%
-#'   {.[names(.) != "forbidden"]} %>%
-#'   map(~ .$default)
-
-counts <- data$counts
+parameters <- task$parameters
+counts <- as.matrix(task$counts)
 
 #   ____________________________________________________________________________
 #   Infer trajectory                                                        ####
@@ -33,39 +31,39 @@ sc <- sc %>% filterdata(
   mintotal = 1,
   minexpr = 0,
   minnumber = 0,
-  knn = params$knn,
-  ccor = params$ccor
+  knn = parameters$knn,
+  ccor = parameters$ccor
 )
 
 # compute pairwise distances
 sc <- sc %>% compdist(
-  metric = params$metric,
+  metric = parameters$metric,
   FSelect = FALSE
 )
 
 # perform clustering
-params$clustnr <- min(params$clustnr, ceiling(ncol(sc@expdata)/5))
+parameters$clustnr <- min(parameters$clustnr, ceiling(ncol(sc@expdata)/5))
 sc <- sc %>% clustexp(
-  sat = params$sat,
-  samp = params$samp,
-  cln = params$cln,
-  clustnr = params$clustnr,
-  bootnr = params$bootnr,
-  FUNcluster = params$FUNcluster
+  sat = parameters$sat,
+  samp = parameters$samp,
+  cln = parameters$cln,
+  clustnr = parameters$clustnr,
+  bootnr = parameters$bootnr,
+  FUNcluster = parameters$FUNcluster
 )
 
 # detect outliers and redefine clusters
 sc <- sc %>% findoutliers(
-  probthr = params$probthr,
-  outminc = params$outminc,
-  outlg = params$outlg,
-  outdistquant = params$outdistquant
+  probthr = parameters$probthr,
+  outminc = parameters$outminc,
+  outlg = parameters$outlg,
+  outdistquant = parameters$outdistquant
 )
 
 # compute t-SNE map
 sc <- sc %>% comptsne(
-  initial_cmd = params$initial_cmd,
-  perplexity = params$perplexity
+  initial_cmd = parameters$initial_cmd,
+  perplexity = parameters$perplexity
 )
 
 # initialization
@@ -76,16 +74,16 @@ ltr <- ltr %>% compentropy()
 
 # computation of the projections for all cells
 ltr <- ltr %>% projcells(
-  cthr = params$cthr,
-  nmode = params$nmode,
-  knn = params$projcells_knn,
-  fr = params$fr
+  cthr = parameters$cthr,
+  nmode = parameters$nmode,
+  knn = parameters$projcells_knn,
+  fr = parameters$fr
 )
 
 # computation of the projections for all cells after randomization
 ltr <- ltr %>% projback(
-  pdishuf = params$pdishuf,
-  fast = params$fast
+  pdishuf = parameters$pdishuf,
+  fast = parameters$fast
 )
 
 # assembly of the lineage tree
@@ -93,7 +91,7 @@ ltr <- ltr %>% lineagegraph()
 
 # compute p-values for link significance
 ltr <- ltr %>% comppvalue(
-  pthr = params$pthr
+  pthr = parameters$pthr
 )
 
 
@@ -107,9 +105,8 @@ checkpoints$method_aftermethod <- as.numeric(Sys.time())
 dimred_milestones <- ltr@ldata$cnl %>% as.matrix
 rownames(dimred_milestones) <- paste0("M", ltr@ldata$m)
 dimred <- ltr@ltcoord %>% na.omit
-cell_ids <- rownames(dimred)
 milestone_ids <- rownames(dimred_milestones)
-grouping <- paste0("M", ltr@ldata$lp[cell_ids])
+grouping <- paste0("M", ltr@ldata$lp[rownames(dimred)])
 
 # calculate distance between milestones
 dist_milestones <- as.matrix(dist(dimred_milestones))
@@ -119,26 +116,24 @@ milestone_network <- ltr@cdata$linkscore %>%
   as.matrix() %>%
   reshape2::melt(varnames = c("from", "to"), value.name = "linkscore") %>%
   na.omit() %>%
-  filter(linkscore >= params$scthr) %>%
   mutate_at(c("from", "to"), ~gsub("cl.", "M", ., fixed = TRUE)) %>%
+  filter(linkscore >= parameters$scthr) %>%
   mutate(
     length =  dist_milestones[cbind(from, to)],
     directed = FALSE
   ) %>%
   dplyr::select(from, to, length, directed)
 
-
-output <- lst(
-  cell_ids,
-  milestone_ids,
-  milestone_network,
-  dimred_milestones,
-  dimred,
-  grouping,
-  timings = checkpoints
-)
-
 #   ____________________________________________________________________________
 #   Save output                                                             ####
 
-write_rds(output, "/ti/output/output.rds")
+output <- dynwrap::wrap_data(cell_ids = rownames(dimred)) %>%
+  dynwrap::add_dimred_projection(
+    milestone_ids = milestone_ids,
+    milestone_network = milestone_network,
+    dimred = dimred,
+    dimred_milestones = dimred_milestones
+  ) %>%
+  dynwrap::add_timings(checkpoints)
+
+dyncli::write_output(output, task$output)
