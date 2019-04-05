@@ -6,12 +6,10 @@ task <- dyncli::main()
 #   "/code/definition.yml"
 # )
 
-library(jsonlite)
-library(readr)
-library(dplyr)
-library(purrr)
+library(dplyr, warn.conflicts = FALSE)
+library(purrr, warn.conflicts = FALSE)
 
-library(RaceID)
+library(RaceID, warn.conflicts = FALSE)
 
 #   ____________________________________________________________________________
 #   Load data                                                               ####
